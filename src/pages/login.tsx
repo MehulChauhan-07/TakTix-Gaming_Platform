@@ -3,11 +3,11 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useAuth } from "../hooks/use-auth"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
-import { Alert, AlertDescription } from "../components/ui/alert"
+import { useAuth } from "@hooks/use-auth"
+import { Button } from "@components/ui/button"
+import { Input } from "@components/ui/input"
+import { Label } from "@components/ui/label"
+import { Alert, AlertDescription } from "@components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 

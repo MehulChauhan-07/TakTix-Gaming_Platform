@@ -1,14 +1,35 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Progress } from "../ui/progress"
-import { useAuth } from "../../hooks/use-auth"
-import { Award, Trophy, Target, Zap, Clock, Users, Star, Lock } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Progress } from "@components/ui/progress";
+import { useAuth } from "@hooks/use-auth";
+import {
+  Award,
+  Trophy,
+  Target,
+  Zap,
+  Clock,
+  Users,
+  Star,
+  Lock,
+} from "lucide-react";
 
 export function Achievements() {
-  const { user } = useAuth()
-  const [achievements, setAchievements] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuth();
+  const [achievements, setAchievements] = useState<
+    Array<{
+      id: string;
+      title: string;
+      description: string;
+      icon: string;
+      progress: number;
+      maxProgress: number;
+      completed: boolean;
+      unlockedAt?: string;
+      category: string;
+    }>
+  >([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Simulate fetching achievements
@@ -26,7 +47,9 @@ export function Achievements() {
               progress: 1,
               maxProgress: 1,
               completed: true,
-              unlockedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+              unlockedAt: new Date(
+                Date.now() - 15 * 24 * 60 * 60 * 1000
+              ).toISOString(),
               category: "general",
             },
             {
@@ -57,7 +80,9 @@ export function Achievements() {
               progress: 3,
               maxProgress: 3,
               completed: true,
-              unlockedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+              unlockedAt: new Date(
+                Date.now() - 5 * 24 * 60 * 60 * 1000
+              ).toISOString(),
               category: "general",
             },
             {
@@ -83,7 +108,8 @@ export function Achievements() {
             {
               id: "7",
               title: "Perfect Tic-Tac-Toe",
-              description: "Win a Tic-Tac-Toe game without letting your opponent mark any squares",
+              description:
+                "Win a Tic-Tac-Toe game without letting your opponent mark any squares",
               icon: "target",
               progress: 0,
               maxProgress: 1,
@@ -100,45 +126,53 @@ export function Achievements() {
               completed: false,
               category: "general",
             },
-          ])
-          setLoading(false)
-        }, 1000)
+          ]);
+          setLoading(false);
+        }, 1000);
       } catch (error) {
-        console.error("Error fetching achievements:", error)
-        setLoading(false)
+        console.error("Error fetching achievements:", error);
+        setLoading(false);
       }
-    }
+    };
 
     if (user) {
-      fetchAchievements()
+      fetchAchievements();
     }
-  }, [user])
+  }, [user]);
 
-  const getIcon = (iconName) => {
+  interface IconProps {
+    iconName: string;
+  }
+
+  const getIcon = (iconName: IconProps["iconName"]): JSX.Element => {
     switch (iconName) {
       case "trophy":
-        return <Trophy className="h-6 w-6" />
+        return <Trophy className="h-6 w-6" />;
       case "target":
-        return <Target className="h-6 w-6" />
+        return <Target className="h-6 w-6" />;
       case "zap":
-        return <Zap className="h-6 w-6" />
+        return <Zap className="h-6 w-6" />;
       case "clock":
-        return <Clock className="h-6 w-6" />
+        return <Clock className="h-6 w-6" />;
       case "users":
-        return <Users className="h-6 w-6" />
+        return <Users className="h-6 w-6" />;
       case "star":
-        return <Star className="h-6 w-6" />
+        return <Star className="h-6 w-6" />;
       default:
-        return <Award className="h-6 w-6" />
+        return <Award className="h-6 w-6" />;
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
         <div className="flex flex-col space-y-1.5 p-6">
-          <h3 className="text-2xl font-semibold leading-none tracking-tight">Achievements</h3>
-          <p className="text-sm text-muted-foreground">Track your gaming milestones</p>
+          <h3 className="text-2xl font-semibold leading-none tracking-tight">
+            Achievements
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Track your gaming milestones
+          </p>
         </div>
         <div className="p-6 pt-0">
           <div className="space-y-8">
@@ -155,34 +189,44 @@ export function Achievements() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (achievements.length === 0) {
     return (
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
         <div className="flex flex-col space-y-1.5 p-6">
-          <h3 className="text-2xl font-semibold leading-none tracking-tight">Achievements</h3>
-          <p className="text-sm text-muted-foreground">No achievements available yet</p>
+          <h3 className="text-2xl font-semibold leading-none tracking-tight">
+            Achievements
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            No achievements available yet
+          </p>
         </div>
         <div className="p-6 pt-0">
-          <p className="text-center py-8 text-muted-foreground">Start playing to unlock achievements!</p>
+          <p className="text-center py-8 text-muted-foreground">
+            Start playing to unlock achievements!
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   // Group achievements by category
-  const completedAchievements = achievements.filter((a) => a.completed)
-  const inProgressAchievements = achievements.filter((a) => !a.completed)
+  const completedAchievements = achievements.filter((a) => a.completed);
+  const inProgressAchievements = achievements.filter((a) => !a.completed);
 
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="flex flex-col space-y-1.5 p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h3 className="text-2xl font-semibold leading-none tracking-tight">Achievements</h3>
-            <p className="text-sm text-muted-foreground">Track your gaming milestones</p>
+            <h3 className="text-2xl font-semibold leading-none tracking-tight">
+              Achievements
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Track your gaming milestones
+            </p>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <div className="flex items-center">
@@ -200,7 +244,9 @@ export function Achievements() {
         <div className="space-y-6">
           <h3 className="text-lg font-medium">Completed</h3>
           {completedAchievements.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No achievements completed yet.</p>
+            <p className="text-muted-foreground text-sm">
+              No achievements completed yet.
+            </p>
           ) : (
             <div className="space-y-4">
               {completedAchievements.map((achievement) => (
@@ -212,10 +258,13 @@ export function Achievements() {
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">{achievement.title}</h4>
                       <span className="text-xs text-muted-foreground">
-                        {achievement.unlockedAt && new Date(achievement.unlockedAt).toLocaleDateString()}
+                        {achievement.unlockedAt &&
+                          new Date(achievement.unlockedAt).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">{achievement.description}</p>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {achievement.description}
+                    </p>
                     <Progress value={100} className="h-2" />
                   </div>
                 </div>
@@ -225,7 +274,9 @@ export function Achievements() {
 
           <h3 className="text-lg font-medium pt-4">In Progress</h3>
           {inProgressAchievements.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No achievements in progress.</p>
+            <p className="text-muted-foreground text-sm">
+              No achievements in progress.
+            </p>
           ) : (
             <div className="space-y-4">
               {inProgressAchievements.map((achievement) => (
@@ -243,8 +294,15 @@ export function Achievements() {
                         {achievement.progress}/{achievement.maxProgress}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">{achievement.description}</p>
-                    <Progress value={(achievement.progress / achievement.maxProgress) * 100} className="h-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {achievement.description}
+                    </p>
+                    <Progress
+                      value={
+                        (achievement.progress / achievement.maxProgress) * 100
+                      }
+                      className="h-2"
+                    />
                   </div>
                 </div>
               ))}
@@ -253,6 +311,5 @@ export function Achievements() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

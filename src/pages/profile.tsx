@@ -1,15 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAuth } from "../hooks/use-auth"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
+import { useAuth } from "@hooks/use-auth"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs"
+import { Button } from "@components/ui/button"
+import { Input } from "@components/ui/input"
+import { Label } from "@components/ui/label"
 import { User, Mail, Camera, Trophy, History, Award } from "lucide-react"
-import { GameStatistics } from "../components/profile/game-statistics"
-import { GameHistoryDetailed } from "../components/profile/game-history-detailed"
-import { Achievements } from "../components/profile/achievements"
+import { GameStatistics } from "@components/profile/game-statistics"
+import { GameHistoryDetailed } from "@components/profile/game-history-detailed"
+import { Achievements } from "@components/profile/achievements"
 
 export default function ProfilePage() {
   const { user } = useAuth()

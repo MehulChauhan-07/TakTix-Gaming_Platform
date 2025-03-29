@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { Button } from "../components/ui/button"
+import { Button } from "@components/ui/button"
 import { Link } from "react-router-dom"
-import { useAuth } from "../hooks/use-auth"
+import { useAuth } from "@hooks/use-auth"
 import { motion } from "framer-motion"
 import { Gamepad2, MessageSquare, Trophy, ShieldCheck, Users, Zap } from "lucide-react"
 

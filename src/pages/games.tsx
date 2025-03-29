@@ -1,18 +1,18 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "../components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { useAuth } from "../hooks/use-auth"
+import { SetStateAction, useEffect, useState } from "react"
+import { Button } from "@components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs"
+import { useAuth } from "@hooks/use-auth"
 import { Gamepad2, Users, Clock } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export default function GamesPage() {
   const { user } = useAuth()
   const [isMatchmaking, setIsMatchmaking] = useState(false)
-  const [selectedGame, setSelectedGame] = useState(null)
+  const [selectedGame, setSelectedGame] = useState<string | null>(null)
 
-  const startMatchmaking = (gameType) => {
+  const startMatchmaking = (gameType: string) => {
     setSelectedGame(gameType)
     setIsMatchmaking(true)
   }
@@ -58,6 +58,7 @@ export default function GamesPage() {
               title="Coming Soon"
               description="More games on the way"
               image="/placeholder.svg?height=200&width=300"
+              onPlay={() => {}}
               disabled
             />
           </div>
@@ -113,7 +114,15 @@ export default function GamesPage() {
   )
 }
 
-function GameCard({ title, description, image, onPlay, disabled = false }) {
+interface GameCardProps {
+  title: string
+  description: string
+  image: string
+  onPlay: () => void
+  disabled?: boolean
+}
+
+function GameCard({ title, description, image, onPlay, disabled = false }: GameCardProps) {
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="flex flex-col space-y-1.5 p-6">
@@ -138,12 +147,12 @@ function GameCard({ title, description, image, onPlay, disabled = false }) {
   )
 }
 
-function MatchmakingModal({ gameType, onClose }) {
+function MatchmakingModal({ gameType, onClose }: { gameType: string; onClose: () => void }) {
   const [searchTime, setSearchTime] = useState(0)
   const [matchFound, setMatchFound] = useState(false)
 
   // Simulate finding a match after a random time between 3-8 seconds
-  useState(() => {
+  useEffect(() => {
     const timer = setInterval(() => {
       setSearchTime((prev) => prev + 1)
     }, 1000)
@@ -167,7 +176,7 @@ function MatchmakingModal({ gameType, onClose }) {
     }
   }, [])
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
