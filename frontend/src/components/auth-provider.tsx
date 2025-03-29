@@ -9,7 +9,7 @@ type User = {
   id: string
   username: string
   email: string
-  profilePicture?: string
+  profilePicture?: string | null
 }
 
 type AuthContextType = {
