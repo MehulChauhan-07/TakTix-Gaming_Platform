@@ -20,7 +20,6 @@ const env: Environment = {
   MONGODB_URI: process.env.MONGODB_URI || "mongodb://localhost:27017/taktix",
   JWT_SECRET: process.env.JWT_SECRET || "default_jwt_secret_for_development",
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "30d",
-  // FRONTEND_URL: process.env.FRONTEND_URL!,
   FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:5173",
 };
 

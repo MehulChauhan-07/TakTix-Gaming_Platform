@@ -1,5 +1,7 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
+import dotenv from "dotenv";
+import path from "path";
 import helmet from "helmet";
 import morgan from "morgan";
 import compression from "compression";
@@ -13,22 +15,24 @@ import tournamentRoutes from "./routes/tournament.routes";
 import { globalLimiter, authLimiter } from "./middleware/rateLimit";
 
 const app: Application = express();
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 // Middleware
 app.use(
   cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? process.env.FRONTEND_URL 
-      : ['http://localhost:5173'],
+    origin: process.env.FRONTEND_URL,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    exposedHeaders: ['set-cookie']
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+    exposedHeaders: ["set-cookie"],
   })
 );
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
@@ -38,7 +42,7 @@ app.use(cookieParser());
 app.use(globalLimiter);
 
 // Use morgan logger only in development
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
