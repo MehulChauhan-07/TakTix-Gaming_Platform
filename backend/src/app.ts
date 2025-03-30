@@ -15,8 +15,10 @@ import tournamentRoutes from "./routes/tournament.routes";
 import { globalLimiter, authLimiter } from "./middleware/rateLimit";
 
 const app: Application = express();
+
 // Load environment variables
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+const envFile = process.env.USE_DEVTUNNEL === 'true' ? '.env.local' : '.env';
+dotenv.config({ path: path.resolve(__dirname, `../../${envFile}`) });
 
 // Middleware
 app.use(

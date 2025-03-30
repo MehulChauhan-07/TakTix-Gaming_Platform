@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "nodemon --exec ts-node server.ts",
+    "dev:tunnel": "cross-env USE_DEVTUNNEL=true nodemon --exec ts-node server.ts",
     "build": "tsc",
     "lint": "eslint . --ext .ts",
     "test": "jest"
@@ -40,6 +41,7 @@
     "@types/mongoose": "^5.11.96",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.13.14",
+    "cross-env": "^7.0.3",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"

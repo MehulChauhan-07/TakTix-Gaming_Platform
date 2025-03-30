@@ -20,8 +20,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Create socket connection
-    const socketInstance = io(import.meta.env.VITE_WS_URL || 'http://localhost:5000', {
+    // Create socket connection using the proxy
+    const socketInstance = io('/', {
+      path: '/socket.io',
       withCredentials: true,
       auth: {
         token: localStorage.getItem('token'),
