@@ -1,63 +1,44 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document } from 'mongoose';
+import { GameState, GameType, GameStatus } from '../types/game.types';
 
-export interface IGame extends Document {
-  name: string;
-  slug: string;
-  description: string;
-  rules: string;
-  imageUrl: string;
-  maxPlayers: number;
-  minPlayers: number;
-  gameSettings: Record<string, any>;
-  isActive: boolean;
+export interface IGame extends Document, Omit<GameState, 'id'> {
+  // Add any additional methods here
 }
 
-const GameSchema: Schema = new Schema(
+const gameSchema = new Schema<IGame>(
   {
-    name: {
+    type: {
       type: String,
-      required: [true, "Game name is required"],
-      unique: true,
-      trim: true,
+      enum: ['tictactoe', 'chess', 'checkers'],
+      required: true,
     },
-    slug: {
+    status: {
       type: String,
-      required: [true, "Game slug is required"],
-      unique: true,
-      trim: true,
-      lowercase: true,
+      enum: ['waiting', 'in_progress', 'completed', 'cancelled'],
+      default: 'waiting',
     },
-    description: {
+    players: [{
+      id: { type: String, required: true },
+      username: { type: String, required: true },
+      avatar: String,
+    }],
+    currentTurn: {
       type: String,
-      required: [true, "Game description is required"],
+      required: true,
     },
-    rules: {
-      type: String,
-      required: [true, "Game rules are required"],
-    },
-    imageUrl: {
-      type: String,
-      default: "",
-    },
-    maxPlayers: {
-      type: Number,
-      required: [true, "Maximum number of players is required"],
-    },
-    minPlayers: {
-      type: Number,
-      required: [true, "Minimum number of players is required"],
-      default: 2,
-    },
-    gameSettings: {
+    board: {
       type: Schema.Types.Mixed,
-      default: {},
+      required: true,
     },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+    winner: String,
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-export default mongoose.model<IGame>("Game", GameSchema);
+// Indexes for better query performance
+gameSchema.index({ type: 1, status: 1 });
+gameSchema.index({ 'players.id': 1 });
+
+export const Game = mongoose.model<IGame>('Game', gameSchema);

@@ -9,6 +9,28 @@ import ProfilePage from "@pages/profile"
 import LoginPage from "@pages/login"
 import SignupPage from "@pages/signup"
 import ProtectedRoute from "@components/protected-route"
+import { GameState } from "./types/game.types"
+
+// Define request/response types
+interface MakeMoveRequest {
+  gameId: string;
+  position: number;
+  playerId: string;
+}
+
+interface MakeMoveResponse {
+  status: 'success' | 'error';
+  data?: GameState;
+  message?: string;
+}
+
+// Custom error classes
+export class GameError extends Error {
+  constructor(message: string, public statusCode: number = 400) {
+    super(message);
+    this.name = 'GameError';
+  }
+}
 
 function App() {
   return (

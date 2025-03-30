@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
+import jwt, { SignOptions, Secret } from "jsonwebtoken";
 
 export interface IUser extends Document {
   username: string;
@@ -7,6 +8,7 @@ export interface IUser extends Document {
   password: string;
   profilePicture?: string;
   bio?: string;
+  isAdmin: boolean;
   stats: {
     gamesPlayed: number;
     gamesWon: number;
@@ -18,6 +20,7 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  generateAuthToken(): string;
 }
 
 const UserSchema: Schema = new Schema(
@@ -28,6 +31,11 @@ const UserSchema: Schema = new Schema(
       unique: true,
       trim: true,
       minlength: [3, "Username must be at least 3 characters"],
+      maxlength: [20, "Username cannot exceed 20 characters"],
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false,
     },
     email: {
       type: String,
@@ -37,7 +45,7 @@ const UserSchema: Schema = new Schema(
       lowercase: true,
       match: [
         /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-        "Please enter a valid email",
+        "Please provide a valid email address",
       ],
     },
     password: {
@@ -83,8 +91,8 @@ UserSchema.pre<IUser>("save", async function (next) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
-  } catch (error) {
-    next(error as Error);
+  } catch (error: any) {
+    next(error);
   }
 });
 
@@ -94,5 +102,20 @@ UserSchema.methods.comparePassword = async function (
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
+
+// Method to generate JWT token
+UserSchema.methods.generateAuthToken = function (): string {
+  return jwt.sign(
+    { id: this._id.toString() },
+    process.env.JWT_SECRET as Secret,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "30d",
+    } as SignOptions
+  );
+};
+
+// Create indexes for better performance
+UserSchema.index({ email: 1 });
+UserSchema.index({ username: 1 });
 
 export default mongoose.model<IUser>("User", UserSchema);

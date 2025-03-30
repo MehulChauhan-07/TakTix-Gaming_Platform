@@ -1,24 +1,49 @@
-const express = require("express");
-const router = express.Router();
-const gameController = require("../controllers/game.controller");
-const authMiddleware = require("../middlewares/auth.middleware");
+import { Router } from "express";
+import { auth } from "../middleware/auth";
+import {
+  createGame,
+  getGames,
+  getGameById,
+  joinGame,
+  makeMove,
+  resignGame,
+  getActiveGames,
+  getGameHistory
+} from "../controllers/game.controller";
 
-// Apply auth middleware to all game routes
-router.use(authMiddleware);
+const router = Router();
 
-// Create new game
-router.post("/", gameController.createGame);
+// All routes require authentication
+router.use(auth);
+
+// Get all games
+router.get("/", getGames);
+
+// Create a new game
+router.post("/", createGame);
+
+// Get game by id
+router.get("/:gameId", getGameById);
 
 // Join a game
-router.post("/:gameId/join", gameController.joinGame);
+router.post("/:id/join", joinGame);
 
-// Get available games
-router.get("/available", gameController.getAvailableGames);
+// Make a move
+router.post("/:gameId/move", makeMove);
 
-// Get user's games
-router.get("/my-games", gameController.getUserGames);
+// Resign a game
+router.post("/:id/resign", resignGame);
 
-// Get game by ID
-router.get("/:gameId", gameController.getGameById);
+// Get active games
+router.get("/active", getActiveGames);
 
-module.exports = router;
+// Get game history
+router.get("/history", getGameHistory);
+
+// Get active games for a player
+router.get('/player/:playerId/active', getActiveGames);
+
+// Get game history for a player
+router.get('/player/:playerId/history', getGameHistory);
+
+export default router;

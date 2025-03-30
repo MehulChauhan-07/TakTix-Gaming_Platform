@@ -1,117 +1,89 @@
-const Game = require("../models/game.model");
-const User = require("../models/user.model");
+import { Request, Response } from 'express';
+import { GameService } from '../services/game.Service';
+import { AppError } from '../middleware/errorMiddleware';
 
-// Create a new game
-exports.createGame = async (req, res) => {
+export const createGame = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { gameType } = req.body;
-
-    const newGame = new Game({
-      gameType,
-      players: [
-        {
-          user: req.userId,
-          color: gameType === "chess" ? "white" : "X",
-        },
-      ],
-      gameData:
-        gameType === "chess"
-          ? {
-              boardState:
-                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-            } // Initial FEN for chess
-          : { board: Array(9).fill(null) }, // Initial board for tic-tac-toe
-    });
-
-    await newGame.save();
-    res.status(201).json(newGame);
+    const { gameType, opponent } = req.body;
+    const game = await GameService.createGame(req.user!.id, gameType, opponent);
+    res.status(201).json({ status: 'success', data: game });
   } catch (error) {
-    console.error("Create game error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error creating game:', error);
+    res.status(500).json({ status: 'error', message: 'Error creating game' });
   }
 };
 
-// Join an existing game
-exports.joinGame = async (req, res) => {
+export const getGames = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { gameId } = req.params;
+    const games = await GameService.getGames(req.user!.id);
+    res.status(200).json({ status: 'success', data: games });
+  } catch (error) {
+    console.error('Error getting games:', error);
+    res.status(500).json({ status: 'error', message: 'Error getting games' });
+  }
+};
 
-    const game = await Game.findById(gameId);
+export const getGameById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const game = await GameService.getGameById(req.params.gameId);
     if (!game) {
-      return res.status(404).json({ message: "Game not found" });
+      res.status(404).json({ status: 'error', message: 'Game not found' });
+      return;
     }
-
-    if (game.status !== "waiting") {
-      return res.status(400).json({ message: "Game is no longer available" });
-    }
-
-    if (game.players.length >= 2) {
-      return res.status(400).json({ message: "Game is full" });
-    }
-
-    // Add second player
-    game.players.push({
-      user: req.userId,
-      color: game.gameType === "chess" ? "black" : "O",
-    });
-
-    game.status = "active";
-    game.startTime = new Date();
-
-    await game.save();
-    res.json(game);
+    res.status(200).json({ status: 'success', data: game });
   } catch (error) {
-    console.error("Join game error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error getting game:', error);
+    res.status(500).json({ status: 'error', message: 'Error getting game' });
   }
 };
 
-// Get available games
-exports.getAvailableGames = async (req, res) => {
+export const joinGame = async (req: Request, res: Response): Promise<void> => {
   try {
-    const games = await Game.find({
-      status: "waiting",
-      "players.user": { $ne: req.userId },
-    }).populate("players.user", "username");
-
-    res.json(games);
+    const game = await GameService.joinGame(req.params.gameId, req.user!.id);
+    res.status(200).json({ status: 'success', data: game });
   } catch (error) {
-    console.error("Get available games error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error joining game:', error);
+    res.status(500).json({ status: 'error', message: 'Error joining game' });
   }
 };
 
-// Get user's active games
-exports.getUserGames = async (req, res) => {
+export const makeMove = async (req: Request, res: Response): Promise<void> => {
   try {
-    const games = await Game.find({
-      "players.user": req.userId,
-      status: { $in: ["waiting", "active"] },
-    }).populate("players.user", "username");
-
-    res.json(games);
+    const { move } = req.body;
+    const game = await GameService.makeMove(req.params.gameId, req.user!.id, move);
+    res.status(200).json({ status: 'success', data: game });
   } catch (error) {
-    console.error("Get user games error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error making move:', error);
+    res.status(500).json({ status: 'error', message: 'Error making move' });
   }
 };
 
-// Get game by ID
-exports.getGameById = async (req, res) => {
+export const resignGame = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { gameId } = req.params;
-
-    const game = await Game.findById(gameId)
-      .populate("players.user", "username")
-      .populate("winner", "username");
-
-    if (!game) {
-      return res.status(404).json({ message: "Game not found" });
-    }
-
-    res.json(game);
+    const game = await GameService.resignGame(req.params.gameId, req.user!.id);
+    res.status(200).json({ status: 'success', data: game });
   } catch (error) {
-    console.error("Get game error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error resigning game:', error);
+    res.status(500).json({ status: 'error', message: 'Error resigning game' });
+  }
+};
+
+export const getActiveGames = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const games = await GameService.getActiveGames(req.params.playerId);
+    res.status(200).json({ status: 'success', data: games });
+  } catch (error) {
+    console.error('Error getting active games:', error);
+    res.status(500).json({ status: 'error', message: 'Error getting active games' });
+  }
+};
+
+export const getGameHistory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const games = await GameService.getGameHistory(req.params.playerId);
+    res.status(200).json({ status: 'success', data: games });
+  } catch (error) {
+    console.error('Error getting game history:', error);
+    res.status(500).json({ status: 'error', message: 'Error getting game history' });
   }
 };

@@ -1,20 +1,21 @@
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
-import User from "../models/User";
-import Match from "../models/Match";
+import User from "../models/user.model";
+import Match, { IMatch } from "../models/match.model";
+import { Schema } from "mongoose";
 
 // Game-specific handlers
-import handleChessEvents from "./handlers/chessHandler";
-import handleTicTacToeEvents from "./handlers/ticTacToeHandler";
+import handleChessEvents from "./handler/chessHandler";
+import handleTicTacToeEvents from "./handler/ticTacToeHandler";
 
 interface AuthenticatedSocket extends Socket {
-  userId?: string;
-  username?: string;
+  userId: string;
+  username: string;
 }
 
 export default function initializeSocket(io: Server) {
   // Middleware to authenticate socket connections
-  io.use(async (socket: AuthenticatedSocket, next) => {
+  io.use(async (socket: Socket, next) => {
     const token = socket.handshake.auth.token;
 
     if (!token) {
@@ -27,14 +28,17 @@ export default function initializeSocket(io: Server) {
         process.env.JWT_SECRET || "your-secret-key"
       ) as { id: string };
 
-      const user = await User.findById(decoded.id);
+      const user = (await User.findById(decoded.id)) as {
+        _id: string;
+        username: string;
+      } | null;
 
       if (!user) {
         return next(new Error("User not found"));
       }
 
-      socket.userId = user._id.toString();
-      socket.username = user.username;
+      (socket as AuthenticatedSocket).userId = user._id;
+      (socket as AuthenticatedSocket).username = user.username;
       next();
     } catch (error) {
       next(new Error("Authentication error"));
@@ -42,14 +46,15 @@ export default function initializeSocket(io: Server) {
   });
 
   // Connection event
-  io.on("connection", (socket: AuthenticatedSocket) => {
-    console.log(`User connected: ${socket.username} (${socket.userId})`);
+  io.on("connection", ((socket: Socket) => {
+    const authenticatedSocket = socket as AuthenticatedSocket;
+    console.log(`User connected: ${authenticatedSocket.username} (${authenticatedSocket.userId})`);
 
     // Join user to their personal room
-    socket.join(`user:${socket.userId}`);
+    authenticatedSocket.join(`user:${authenticatedSocket.userId}`);
 
     // Handle matchmaking
-    socket.on("join-matchmaking", async (gameId: string) => {
+    authenticatedSocket.on("join-matchmaking", async (gameId: string) => {
       try {
         // Find waiting matches for this game
         const waitingMatch = await Match.findOne({
@@ -61,9 +66,10 @@ export default function initializeSocket(io: Server) {
         if (waitingMatch) {
           // Join existing match
           waitingMatch.players.push({
-            user: socket.userId,
+            user: new Schema.Types.ObjectId(authenticatedSocket.userId),
+            color: waitingMatch.players[0].color === "white" ? "black" : "white",
             score: 0,
-            winner: false,
+            winner: false
           });
           waitingMatch.status = "active";
           waitingMatch.startedAt = new Date();
@@ -74,19 +80,19 @@ export default function initializeSocket(io: Server) {
             "match-started",
             waitingMatch._id
           );
-          socket.join(`match:${waitingMatch._id}`);
+          authenticatedSocket.join(`match:${waitingMatch._id}`);
 
           // Notify match creator
           io.to(`user:${waitingMatch.players[0].user}`).emit(
             "opponent-joined",
             {
               matchId: waitingMatch._id,
-              opponent: socket.username,
+              opponent: authenticatedSocket.username,
             }
           );
 
           // Notify the player who just joined
-          socket.emit("match-joined", {
+          authenticatedSocket.emit("match-joined", {
             matchId: waitingMatch._id,
             opponent: await User.findById(waitingMatch.players[0].user).select(
               "username profilePicture"
@@ -95,104 +101,109 @@ export default function initializeSocket(io: Server) {
         } else {
           // Create new match
           const newMatch = new Match({
-            game: gameId,
+            game: new Schema.Types.ObjectId(gameId),
             players: [
               {
-                user: socket.userId,
+                user: new Schema.Types.ObjectId(authenticatedSocket.userId),
+                color: "white",
                 score: 0,
-                winner: false,
+                winner: false
               },
             ],
             status: "waiting",
             gameState: {},
+            spectators: [],
+            messages: []
           });
 
           await newMatch.save();
 
           // Join match room
-          socket.join(`match:${newMatch._id}`);
+          authenticatedSocket.join(`match:${newMatch._id}`);
 
           // Notify player
-          socket.emit("waiting-for-opponent", newMatch._id);
+          authenticatedSocket.emit("waiting-for-opponent", newMatch._id);
         }
       } catch (error) {
         console.error("Join matchmaking error:", error);
-        socket.emit("matchmaking-error", "Failed to join matchmaking");
+        authenticatedSocket.emit("matchmaking-error", "Failed to join matchmaking");
       }
     });
 
     // Handle game-specific events
-    socket.on("join-game", async (matchId: string) => {
+    authenticatedSocket.on("join-game", async (matchId: string) => {
       try {
-        const match = await Match.findById(matchId).populate("game");
+        const match = await Match.findById(matchId).populate("game").lean();
 
         if (!match) {
-          return socket.emit("error", "Match not found");
+          return authenticatedSocket.emit("error", "Match not found");
         }
 
         // Join match room
-        socket.join(`match:${matchId}`);
+        authenticatedSocket.join(`match:${matchId}`);
 
         // Route to game-specific handlers based on game type
-        switch ((match.game as any).slug) {
+        const gameType = (match.game as any).slug;
+        switch (gameType) {
           case "chess":
-            handleChessEvents(io, socket, match);
+            handleChessEvents(io, authenticatedSocket, match as any);
             break;
           case "tic-tac-toe":
-            handleTicTacToeEvents(io, socket, match);
+            handleTicTacToeEvents(io, authenticatedSocket, match as any);
             break;
           default:
-            socket.emit("error", "Unsupported game type");
+            authenticatedSocket.emit("error", "Unsupported game type");
         }
       } catch (error) {
         console.error("Join game error:", error);
-        socket.emit("error", "Failed to join game");
+        authenticatedSocket.emit("error", "Failed to join game");
       }
     });
 
     // Handle spectating
-    socket.on("spectate", async (matchId: string) => {
+    authenticatedSocket.on("spectate", async (matchId: string) => {
       try {
         const match = await Match.findById(matchId);
 
         if (!match) {
-          return socket.emit("error", "Match not found");
+          return authenticatedSocket.emit("error", "Match not found");
         }
 
         // Add user to spectators if not already there
-        if (!match.spectators.includes(socket.userId)) {
-          match.spectators.push(socket.userId);
+        const userId = new Schema.Types.ObjectId(authenticatedSocket.userId);
+        if (!match.spectators.some(id => id.toString() === userId.toString())) {
+          match.spectators.push(userId);
           await match.save();
         }
 
         // Join match room as spectator
-        socket.join(`match:${matchId}:spectators`);
+        authenticatedSocket.join(`match:${matchId}:spectators`);
 
         // Send current game state
-        socket.emit("game-state", match.gameState);
+        authenticatedSocket.emit("game-state", match.gameState);
 
         // Notify players of new spectator
-        io.to(`match:${matchId}`).emit("spectator-joined", socket.username);
+        io.to(`match:${matchId}`).emit("spectator-joined", authenticatedSocket.username);
       } catch (error) {
         console.error("Spectate error:", error);
-        socket.emit("error", "Failed to spectate game");
+        authenticatedSocket.emit("error", "Failed to spectate game");
       }
     });
 
     // In-game chat
-    socket.on("send-message", async (matchId: string, message: string) => {
+    authenticatedSocket.on("send-message", async (matchId: string, message: string) => {
       try {
         const match = await Match.findById(matchId);
 
         if (!match) {
-          return socket.emit("error", "Match not found");
+          return authenticatedSocket.emit("error", "Match not found");
         }
 
         // Add message to match
         match.messages.push({
-          user: socket.userId,
+          user: new Schema.Types.ObjectId(authenticatedSocket.userId),
           message,
-          timestamp: new Date(),
+          timestamp: new Date()
         });
 
         await match.save();
@@ -201,19 +212,19 @@ export default function initializeSocket(io: Server) {
         io.to(`match:${matchId}`)
           .to(`match:${matchId}:spectators`)
           .emit("new-message", {
-            username: socket.username,
+            username: authenticatedSocket.username,
             message,
             timestamp: new Date(),
           });
       } catch (error) {
         console.error("Send message error:", error);
-        socket.emit("error", "Failed to send message");
+        authenticatedSocket.emit("error", "Failed to send message");
       }
     });
 
     // Disconnect event
-    socket.on("disconnect", () => {
-      console.log(`User disconnected: ${socket.username} (${socket.userId})`);
+    authenticatedSocket.on("disconnect", () => {
+      console.log(`User disconnected: ${authenticatedSocket.username} (${authenticatedSocket.userId})`);
     });
-  });
+  }));
 }

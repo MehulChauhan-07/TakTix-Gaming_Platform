@@ -4,6 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { AuthService } from "../services/auth.service"
 
 type User = {
   id: string
@@ -15,17 +16,22 @@ type User = {
 type AuthContextType = {
   user: User | null
   loading: boolean
+  isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+export const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: false,
+  isAuthenticated: false,
+  login: async () => {},
+  signup: async () => {},
+  logout: () => {},
+})
 
-// Mock users database for demo purposes
-const mockUsers = new Map()
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
@@ -37,23 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token = localStorage.getItem("token")
 
         if (token) {
-          // In a real app, you would verify the token with your backend
-          // For demo purposes, we'll parse the token and get the user data
           try {
-            const payload = JSON.parse(atob(token.split(".")[1]))
-            const userId = payload.userId
-
-            // Get user from mock database or localStorage
-            const storedUser = localStorage.getItem(`user_${userId}`)
-            if (storedUser) {
-              setUser(JSON.parse(storedUser))
-            } else {
-              // Token is invalid, remove it
-              localStorage.removeItem("token")
-              setUser(null)
-            }
-          } catch (e) {
-            // Invalid token
+            const userData = await AuthService.getUser()
+            setUser(userData.user)
+          } catch (error) {
+            // Invalid token or API error
             localStorage.removeItem("token")
             setUser(null)
           }
@@ -71,28 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      // In a real app, this would be an API call
-      // For demo purposes, we'll simulate a login
-
-      // Find user by email
-      const storedUsers = Object.keys(localStorage)
-        .filter((key) => key.startsWith("user_"))
-        .map((key) => JSON.parse(localStorage.getItem(key) || "{}"))
-
-      const user = storedUsers.find((u) => u.email === email)
-
-      if (!user || user.password !== password) {
-        throw new Error("Invalid email or password")
-      }
-
-      // Create a JWT-like token
-      const token = createMockToken(user)
+      const { user, token } = await AuthService.login(email, password)
       localStorage.setItem("token", token)
-
-      // Remove password from user object
-      const { password: _, ...userWithoutPassword } = user
-      setUser(userWithoutPassword)
-
+      setUser(user)
       navigate("/dashboard")
     } catch (error) {
       console.error("Login error:", error)
@@ -105,40 +80,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (username: string, email: string, password: string) => {
     setLoading(true)
     try {
-      // In a real app, this would be an API call
-      // For demo purposes, we'll simulate a signup
-
-      // Check if user already exists
-      const storedUsers = Object.keys(localStorage)
-        .filter((key) => key.startsWith("user_"))
-        .map((key) => JSON.parse(localStorage.getItem(key) || "{}"))
-
-      if (storedUsers.some((u) => u.email === email)) {
-        throw new Error("User with this email already exists")
-      }
-
-      // Create new user
-      const userId = `user_${Date.now()}`
-      const newUser = {
-        id: userId,
-        username,
-        email,
-        password, // In a real app, this would be hashed
-        profilePicture: null,
-        createdAt: new Date().toISOString(),
-      }
-
-      // Store user in localStorage
-      localStorage.setItem(`user_${userId}`, JSON.stringify(newUser))
-
-      // Create a JWT-like token
-      const token = createMockToken(newUser)
+      const { user, token } = await AuthService.register(username, email, password)
       localStorage.setItem("token", token)
-
-      // Remove password from user object
-      const { password: _, ...userWithoutPassword } = newUser
-      setUser(userWithoutPassword)
-
+      setUser(user)
       navigate("/dashboard")
     } catch (error) {
       console.error("Signup error:", error)
@@ -148,29 +92,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem("token")
-    setUser(null)
-    navigate("/")
+  const logout = async () => {
+    try {
+      await AuthService.logout()
+    } catch (error) {
+      console.error("Logout error:", error)
+    } finally {
+      localStorage.removeItem("token")
+      setUser(null)
+      navigate("/")
+    }
   }
 
-  // Helper function to create a mock JWT token
-  const createMockToken = (user: any) => {
-    const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))
-    const payload = btoa(
-      JSON.stringify({
-        userId: user.id,
-        email: user.email,
-        username: user.username,
-        exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-      }),
-    )
-    const signature = btoa("mock_signature")
-
-    return `${header}.${payload}.${signature}`
-  }
-
-  return <AuthContext.Provider value={{ user, loading, login, signup, logout }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAuthenticated: !!user,
+        login,
+        signup,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export const useAuth = () => {
@@ -180,6 +127,4 @@ export const useAuth = () => {
   }
   return context
 }
-
-export { AuthContext }
 
