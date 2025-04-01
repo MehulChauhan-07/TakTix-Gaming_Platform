@@ -14,7 +14,11 @@ export interface IUser extends Document {
     gamesWon: number;
     gamesLost: number;
     gamesDraw: number;
+    rating: number;
   };
+  isOnline: boolean;
+  lastSeen: Date;
+  currentGame?: string;
   rating: number;
   friends: mongoose.Types.ObjectId[];
   createdAt: Date;
@@ -68,11 +72,11 @@ const UserSchema: Schema = new Schema(
       gamesWon: { type: Number, default: 0 },
       gamesLost: { type: Number, default: 0 },
       gamesDraw: { type: Number, default: 0 },
+      rating: { type: Number, default: 1000 },
     },
-    rating: {
-      type: Number,
-      default: 1000,
-    },
+    isOnline: { type: Boolean, default: false },
+    lastSeen: { type: Date, default: Date.now },
+    currentGame: { type: String, default: null },
     friends: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -115,7 +119,7 @@ UserSchema.methods.generateAuthToken = function (): string {
 };
 
 // Create indexes for better performance
-UserSchema.index({ email: 1 });
-UserSchema.index({ username: 1 });
+// UserSchema.index({ email: 1 });
+// UserSchema.index({ username: 1 });
 
 export default mongoose.model<IUser>("User", UserSchema);

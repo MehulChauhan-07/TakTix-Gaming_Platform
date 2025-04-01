@@ -1,9 +1,9 @@
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model";
-import Match from "../models/match.model";
-import { registerGameHandlers } from './gameHandlers';
-import { verifyToken } from '../middleware/auth';
+import { Match } from "../models/match.model";
+import { registerGameHandlers } from "./gameHandlers";
+import { verifyToken } from "../middleware/auth";
 
 interface AuthenticatedSocket extends Socket {
   userId: string;
@@ -16,25 +16,25 @@ export const setupSocketHandlers = (io: Server): void => {
     try {
       const token = socket.handshake.auth.token;
       if (!token) {
-        return next(new Error('Authentication error'));
+        return next(new Error("Authentication error"));
       }
 
       const user = await verifyToken(token);
       if (!user) {
-        return next(new Error('Authentication error'));
+        return next(new Error("Authentication error"));
       }
 
       // Attach user data to socket
       socket.data.user = user;
       next();
     } catch (error) {
-      console.error('Socket authentication error:', error);
-      next(new Error('Authentication error'));
+      console.error("Socket authentication error:", error);
+      next(new Error("Authentication error"));
     }
   });
 
   // Handle new connections
-  io.on('connection', (socket: Socket) => {
+  io.on("connection", (socket: Socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
     // Join user to their personal room
@@ -47,7 +47,7 @@ export const setupSocketHandlers = (io: Server): void => {
     // Add more handlers here as needed
 
     // Handle disconnection
-    socket.on('disconnect', () => {
+    socket.on("disconnect", () => {
       console.log(`Socket disconnected: ${socket.id}`);
     });
   });

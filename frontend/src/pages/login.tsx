@@ -1,50 +1,54 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useAuth } from "@hooks/use-auth"
-import { Button } from "@components/ui/button"
-import { Input } from "@components/ui/input"
-import { Label } from "@components/ui/label"
-import { Alert, AlertDescription } from "@components/ui/alert"
-import { AlertCircle } from "lucide-react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useState } from "react";
+import { useAuth } from "@hooks/use-auth";
+import { Button } from "@components/ui/button";
+import { Input } from "@components/ui/input";
+import { Label } from "@components/ui/label";
+import { Alert, AlertDescription } from "@components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
-  const { login } = useAuth()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const navigate = useNavigate()
-  const location = useLocation()
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Get the redirect path from location state or default to dashboard
-  const from = location.state?.from?.pathname || "/dashboard"
+  const from = location.state?.from?.pathname || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
     try {
-      await login(email, password)
+      await login(email, password);
       // Redirect to the page they were trying to access
-      navigate(from, { replace: true })
+      navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.")
+      setError(
+        err instanceof Error ? err.message : "Login failed. Please try again."
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-12">
       <div className="w-full max-w-md rounded-lg border bg-card text-card-foreground shadow-sm">
         <div className="flex flex-col space-y-1.5 p-6">
           <h3 className="text-2xl font-bold">Login to Taktix</h3>
-          <p className="text-sm text-muted-foreground">Enter your credentials to access your account</p>
+          <p className="text-sm text-muted-foreground">
+            Enter your credentials to access your account
+          </p>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="p-6 pt-0 space-y-4">
@@ -70,7 +74,10 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                <Link
+                  to="/auth/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -99,6 +106,5 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
-  )
+  );
 }
-

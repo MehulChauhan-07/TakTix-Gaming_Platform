@@ -1,66 +1,49 @@
-import React, { createContext, useEffect, useState, useContext } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { useAuth } from '../hooks/useAuth';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import SocketService from "../services/socket.service";
+import { AuthContext } from "./AuthContext";
 
 interface SocketContextType {
-  socket: Socket | null;
-  connected: boolean;
+  socket: SocketService | null;
+  isConnected: boolean;
 }
 
-export const SocketContext = createContext<SocketContextType>({
+const SocketContext = createContext<SocketContextType>({
   socket: null,
-  connected: false,
+  isConnected: false,
 });
 
-export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [connected, setConnected] = useState(false);
-  const { user, isAuthenticated } = useAuth();
+export const useSocket = () => useContext(SocketContext);
+
+export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [socket, setSocket] = useState<SocketService | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (user?.token) {
+      const socketService = SocketService.getInstance();
+      socketService.connect(user.token);
+      setSocket(socketService);
 
-    // Create socket connection using the proxy
-    const socketInstance = io('/', {
-      path: '/socket.io',
-      withCredentials: true,
-      auth: {
-        token: localStorage.getItem('token'),
-      },
-    });
+      const checkConnection = () => {
+        setIsConnected(socketService.isConnected());
+      };
 
-    // Set up event listeners
-    socketInstance.on('connect', () => {
-      console.log('Socket connected');
-      setConnected(true);
-    });
+      // Check connection status periodically
+      const interval = setInterval(checkConnection, 1000);
 
-    socketInstance.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setConnected(false);
-    });
-
-    socketInstance.on('error', (error) => {
-      console.error('Socket error:', error);
-    });
-
-    // Save the socket instance
-    setSocket(socketInstance);
-
-    // Clean up
-    return () => {
-      console.log('Disconnecting socket');
-      socketInstance.disconnect();
-      setSocket(null);
-      setConnected(false);
-    };
-  }, [isAuthenticated]);
+      return () => {
+        clearInterval(interval);
+        socketService.disconnect();
+      };
+    }
+  }, [user]);
 
   return (
-    <SocketContext.Provider value={{ socket, connected }}>
+    <SocketContext.Provider value={{ socket, isConnected }}>
       {children}
     </SocketContext.Provider>
   );
 };
-
-export const useSocketContext = () => useContext(SocketContext); 

@@ -1,211 +1,124 @@
 import { Server } from "socket.io";
-import { IMatch, IGameState } from "../../models/match.model";
-import { AuthenticatedSocket } from "../types";
+import { AuthenticatedSocket } from "../../types/socket.types";
+import { TicTacToeMatch, TicTacToeGameState } from "../../models/match.model";
+import Match from "../../models/match.model";
+import mongoose from "mongoose";
 import { updateUserStats, GameResult } from "../../services/userService";
 
-export default function handleTicTacToeEvents(
+const handleTicTacToeEvents = (
   io: Server,
   socket: AuthenticatedSocket,
-  match: IMatch
-) {
-  // Initialize tic-tac-toe game state if it doesn't exist
-  if (!match.gameState || Object.keys(match.gameState).length === 0) {
-    const initialState: IGameState = {
-      board: Array(9).fill(null),
-      currentTurn: match.players[0].user.toString(),
-      moves: [],
-      winner: null,
-      isDraw: false,
-      gameOver: false
-    };
-    match.gameState = initialState;
-    match.save();
-  }
-
-  // Send initial game state to the player
-  socket.emit("game-state", match.gameState);
-
-  // Handle move
-  socket.on("make-move", async (moveData: { index: number }) => {
+  match: TicTacToeMatch & { _id: mongoose.Types.ObjectId }
+) => {
+  socket.on("game:move", async (data: { position: number }) => {
     try {
-      const { index } = moveData;
-
-      // Verify it's the player's turn
-      if (match.gameState.currentTurn !== socket.userId) {
-        return socket.emit("error", "Not your turn");
+      const { position } = data;
+      const currentMatch = await Match.findById(match._id);
+      if (!currentMatch) {
+        socket.emit("error", "Match not found");
+        return;
       }
 
-      // Verify move is valid
+      const { gameState } = currentMatch;
+      const { board, currentPlayer } = gameState as TicTacToeGameState;
+
+      // Validate move
       if (
-        index < 0 ||
-        index > 8 ||
-        match.gameState.board[index] !== null ||
-        match.gameState.gameOver
+        position < 0 ||
+        position > 8 ||
+        board[position] ||
+        currentPlayer !== socket.data.userId
       ) {
-        return socket.emit("error", "Invalid move");
+        socket.emit("error", "Invalid move");
+        return;
       }
 
-      // Get player symbol (X or O)
-      const playerIndex = match.players.findIndex(
-        (p) => p.user.toString() === socket.userId
-      );
-      const symbol = playerIndex === 0 ? "X" : "O";
+      // Update board
+      const symbol = match.game.players.X === socket.data.userId ? "X" : "O";
+      board[position] = symbol;
 
-      // Make the move
-      const newBoard = [...match.gameState.board];
-      newBoard[index] = symbol;
-
-      // Check for win or draw
-      const winPatterns = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-        [0, 4, 8], [2, 4, 6] // Diagonals
+      // Check for win
+      const winningCombos = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8], // Rows
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8], // Columns
+        [0, 4, 8],
+        [2, 4, 6], // Diagonals
       ];
 
       let winner = null;
-      let isDraw = false;
-      let gameOver = false;
-
-      // Check for win
-      for (const pattern of winPatterns) {
-        const [a, b, c] = pattern;
+      for (const combo of winningCombos) {
         if (
-          newBoard[a] &&
-          newBoard[a] === newBoard[b] &&
-          newBoard[a] === newBoard[c]
+          board[combo[0]] &&
+          board[combo[0]] === board[combo[1]] &&
+          board[combo[0]] === board[combo[2]]
         ) {
-          winner = socket.userId;
-          gameOver = true;
+          winner = socket.data.userId;
           break;
         }
       }
 
-      // Check for draw if no winner
-      if (!winner && !newBoard.includes(null)) {
-        isDraw = true;
-        gameOver = true;
-      }
+      // Check for draw
+      const isDraw =
+        !winner && board.every((cell: string | null) => cell !== null);
 
-      // Update next turn
-      const nextTurn = match.players.find(
-        (p) => p.user.toString() !== socket.userId
-      )?.user.toString();
+      // Update match
+      const nextPlayer =
+        match.game.players.X === currentPlayer
+          ? match.game.players.O
+          : match.game.players.X;
 
-      // Update game state
-      match.gameState = {
-        ...match.gameState,
-        board: newBoard,
-        currentTurn: nextTurn || "",
-        moves: [
-          ...match.gameState.moves,
-          { player: socket.userId, position: index, symbol }
-        ],
+      const status = winner ? "completed" : isDraw ? "draw" : "active";
+
+      await Match.findByIdAndUpdate(match._id, {
+        gameState: {
+          board,
+          currentPlayer: nextPlayer,
+          winner,
+          status,
+        },
+        status: status === "active" ? "active" : status,
+        ...(winner && { winner }),
+        ...(status !== "active" && { endTime: new Date() }),
+      });
+
+      // Emit updated game state
+      io.to(match._id.toString()).emit("game:updated", {
+        board,
+        currentPlayer: nextPlayer,
         winner,
-        isDraw,
-        gameOver
-      };
-
-      // If game over, update match status and player stats
-      if (gameOver) {
-        match.status = "completed";
-        match.endedAt = new Date();
-
-        if (winner) {
-          // Update winner
-          const winnerPlayer = match.players.find(
-            (p) => p.user.toString() === winner
-          );
-          if (winnerPlayer) {
-            winnerPlayer.winner = true;
-            winnerPlayer.score = 1;
-          }
-
-          // Update user stats
-          await updateUserStats(winner, 'win');
-          await updateUserStats(
-            match.players.find((p) => p.user.toString() !== winner)?.user.toString() || "",
-            'loss'
-          );
-        } else if (isDraw) {
-          // Update both players for a draw
-          for (const player of match.players) {
-            player.score = 0.5;
-            await updateUserStats(player.user.toString(), 'draw');
-          }
-        }
-      }
-
-      await match.save();
-
-      // Broadcast updated game state to all players and spectators
-      io.to(`match:${match._id}`)
-        .to(`match:${match._id}:spectators`)
-        .emit("game-state", match.gameState);
-
-      // Notify game over if applicable
-      if (gameOver) {
-        io.to(`match:${match._id}`)
-          .to(`match:${match._id}:spectators`)
-          .emit("game-over", {
-            winner: winner ? {
-              userId: winner,
-              username: socket.username,
-            } : null,
-            isDraw,
-          });
-      }
+        status,
+      });
     } catch (error) {
-      console.error("Make move error:", error);
-      socket.emit("error", "Failed to make move");
+      console.error("Error processing move:", error);
+      socket.emit("error", "Failed to process move");
     }
   });
 
-  // Handle forfeit/resign
-  socket.on("forfeit", async () => {
+  socket.on("game:forfeit", async () => {
     try {
-      if (match.status !== "active") {
-        return socket.emit("error", "Cannot forfeit - game not active");
-      }
+      const winner =
+        match.game.players.X === socket.data.userId
+          ? match.game.players.O
+          : match.game.players.X;
 
-      // Set other player as winner
-      const winner = match.players.find(
-        (p) => p.user.toString() !== socket.userId
-      );
+      await Match.findByIdAndUpdate(match._id, {
+        status: "completed",
+        winner,
+        endTime: new Date(),
+        "gameState.status": "completed",
+        "gameState.winner": winner,
+      });
 
-      if (winner) {
-        winner.winner = true;
-        winner.score = 1;
-        match.gameState.winner = winner.user.toString();
-        match.gameState.gameOver = true;
-      }
-
-      match.status = "completed";
-      match.endedAt = new Date();
-      await match.save();
-
-      // Update stats
-      if (winner) {
-        await updateUserStats(winner.user.toString(), 'win');
-        await updateUserStats(socket.userId!, 'loss');
-      }
-
-      // Notify players and spectators
-      io.to(`match:${match._id}`)
-        .to(`match:${match._id}:spectators`)
-        .emit("game-over", {
-          winner: winner ? {
-            userId: winner.user.toString(),
-            username: "Opponent", // Would be better to get actual username
-          } : null,
-          forfeit: true,
-          forfeiter: {
-            userId: socket.userId,
-            username: socket.username,
-          },
-        });
+      io.to(match._id.toString()).emit("game:forfeited", { winner });
     } catch (error) {
-      console.error("Forfeit error:", error);
-      socket.emit("error", "Failed to forfeit game");
+      console.error("Error processing forfeit:", error);
+      socket.emit("error", "Failed to process forfeit");
     }
   });
-}
+};
+
+export default handleTicTacToeEvents;

@@ -26,6 +26,7 @@ export function SiteHeader() {
     { name: "Home", href: "/", icon: Home },
     { name: "Games", href: "/games", icon: Gamepad2 },
     { name: "Dashboard", href: "/dashboard", icon: BarChart2 },
+    { name: "temp", href: "/temp", icon: BarChart2 },
   ];
 
   const isActive = (path: string) => {

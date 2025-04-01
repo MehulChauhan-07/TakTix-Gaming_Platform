@@ -1,7 +1,7 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import { GameState, GameType, GameStatus } from '../types/game.types';
+import mongoose, { Schema, Document } from "mongoose";
+import { GameState, GameType, GameStatus } from "../types/game.types";
 
-export interface IGame extends Document, Omit<GameState, 'id'> {
+export interface IGame extends Document, Omit<GameState, "id"> {
   // Add any additional methods here
 }
 
@@ -9,19 +9,21 @@ const gameSchema = new Schema<IGame>(
   {
     type: {
       type: String,
-      enum: ['tictactoe', 'chess', 'checkers'],
+      enum: ["tictactoe", "chess", "checkers"],
       required: true,
     },
     status: {
       type: String,
-      enum: ['waiting', 'in_progress', 'completed', 'cancelled'],
-      default: 'waiting',
+      enum: ["pending", "active", "completed", "draw"],
+      default: "pending",
     },
-    players: [{
-      id: { type: String, required: true },
-      username: { type: String, required: true },
-      avatar: String,
-    }],
+    players: [
+      {
+        id: { type: String, required: true },
+        username: { type: String, required: true },
+        avatar: String,
+      },
+    ],
     currentTurn: {
       type: String,
       required: true,
@@ -39,6 +41,6 @@ const gameSchema = new Schema<IGame>(
 
 // Indexes for better query performance
 gameSchema.index({ type: 1, status: 1 });
-gameSchema.index({ 'players.id': 1 });
+gameSchema.index({ "players.id": 1 });
 
-export const Game = mongoose.model<IGame>('Game', gameSchema);
+export const Game = mongoose.model<IGame>("Game", gameSchema);

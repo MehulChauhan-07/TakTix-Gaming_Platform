@@ -1,15 +1,16 @@
-import { Routes, Route } from "react-router-dom"
-import { SiteHeader } from "@components/layout/site-header"
-import { SiteFooter } from "@components/layout/site-footer"
-import HomePage from "@pages/home"
-import DashboardPage from "@pages/dashboard"
-import GamesPage from "@pages/games"
-import GamePlayPage from "@pages/game-play"
-import ProfilePage from "@pages/profile"
-import LoginPage from "@pages/login"
-import SignupPage from "@pages/signup"
-import ProtectedRoute from "@components/protected-route"
-import { GameState } from "./types/game.types"
+import { Routes, Route } from "react-router-dom";
+import { SiteHeader } from "@components/layout/site-header";
+import { SiteFooter } from "@components/layout/site-footer";
+import HomePage from "@pages/home";
+import DashboardPage from "@pages/dashboard";
+import GamesPage from "@pages/games";
+import GamePlayPage from "@pages/game-play";
+import ProfilePage from "@pages/profile";
+import LoginPage from "@pages/login";
+import SignupPage from "@pages/signup";
+import TempPage from "@pages/temp/temp";
+import ProtectedRoute from "@components/protected-route";
+import { GameState } from "./types/game.types";
 
 // Define request/response types
 interface MakeMoveRequest {
@@ -19,7 +20,7 @@ interface MakeMoveRequest {
 }
 
 interface MakeMoveResponse {
-  status: 'success' | 'error';
+  status: "success" | "error";
   data?: GameState;
   message?: string;
 }
@@ -28,7 +29,7 @@ interface MakeMoveResponse {
 export class GameError extends Error {
   constructor(message: string, public statusCode: number = 400) {
     super(message);
-    this.name = 'GameError';
+    this.name = "GameError";
   }
 }
 
@@ -77,12 +78,13 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/temp" element={<TempPage />} />
         </Routes>
       </main>
       <SiteFooter />
     </div>
-  )
+  );
 }
 
-export default App
-
+export default App;
