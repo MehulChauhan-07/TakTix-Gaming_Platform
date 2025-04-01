@@ -8,7 +8,6 @@ import GamePlayPage from "@pages/game-play";
 import ProfilePage from "@pages/profile";
 import LoginPage from "@pages/login";
 import SignupPage from "@pages/signup";
-import TempPage from "@pages/temp/temp";
 import ProtectedRoute from "@components/protected-route";
 import { GameState } from "./types/game.types";
 
@@ -79,7 +78,7 @@ function App() {
             }
           />
 
-          <Route path="/temp" element={<TempPage />} />
+          {/* <Route path="/temp" element={<TempPage />} /> */}
         </Routes>
       </main>
       <SiteFooter />
