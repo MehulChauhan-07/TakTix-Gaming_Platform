@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { GameState, GameType } from "../types/game.types";
 import { GameService } from "../services/game.service";
 import { useSocket } from "./SocketContext";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "@hooks/use-Auth";
 
 interface GameContextType {
   activeGames: GameState[];

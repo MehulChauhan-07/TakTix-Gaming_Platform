@@ -3,7 +3,7 @@
 import type React from "react";
 
 import { useState } from "react";
-import { useAuth } from "@hooks/use-auth";
+import { useAuth } from "@/src/hooks/use-Auth";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";

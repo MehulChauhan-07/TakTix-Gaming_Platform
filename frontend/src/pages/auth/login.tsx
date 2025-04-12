@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@hooks/use-auth";
+import { useAuth } from "@hooks/use-Auth";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
 import { Alert, AlertDescription } from "@components/ui/alert";
 import { Gamepad2, AlertCircle, Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-
+import { motion } from "framer-motion";
 export default function TempPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");

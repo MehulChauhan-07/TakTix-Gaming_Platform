@@ -1,18 +1,15 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { SiteHeader } from "@components/layout/site-header";
 import { SiteFooter } from "@components/layout/site-footer";
-import { AnimatedRoute } from "@components/layout/motion-layout";
-import HomePage from "@pages/home/home";
+import HomePage from "@/src/pages/home/home";
 import DashboardPage from "@pages/dashboard/dashboard";
-import GamesPage from "@pages/games/games";
-import GamePlayPage from "@pages/games/game-play";
-import ProfilePage from "@pages/profile/profile";
-import LoginPage from "@pages/auth/login";
-import SignupPage from "@pages/auth/signup";
+import GamesPage from "@/src/pages/games/games";
+import GamePlayPage from "@/src/pages/games/game-play";
+import ProfilePage from "@/src/pages/profile/profile";
+import LoginPage from "@/src/pages/auth/login";
+import SignupPage from "@/src/pages/auth/signup";
 import ProtectedRoute from "@components/protected-route";
 import { GameState } from "@/src/types/game.types";
-import { ReactNode } from "react";
-import TempPage from "./pages/temp";
 
 // Define request/response types
 interface MakeMoveRequest {
@@ -36,13 +33,11 @@ export class GameError extends Error {
 }
 
 function App() {
-  const location = useLocation();
-
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <main className="flex-1 relative">
-        <Routes location={location} key={location.pathname}>
+      <main className="flex-1">
+        <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/signup" element={<SignupPage />} />
@@ -83,7 +78,7 @@ function App() {
             }
           />
 
-          <Route path="/temp" element={<TempPage />} />
+          {/* <Route path="/temp" element={<TempPage />} /> */}
         </Routes>
       </main>
       <SiteFooter />

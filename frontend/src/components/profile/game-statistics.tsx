@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { useAuth } from "@hooks/use-auth";
+import { useAuth } from "@hooks/use-Auth";
 
 export function GameStatistics() {
   const { user } = useAuth();

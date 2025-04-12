@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import { useAuth } from "@hooks/use-auth";
+import { useAuth } from "@hooks/use-Auth";
 import { Button } from "@components/ui/button";
 import { ArrowLeft, MessageSquare } from "lucide-react";
 
@@ -441,7 +441,9 @@ function TicTacToeGame({ matchId }: { matchId: string | null }) {
 
 function GameChat({ matchId }: { matchId: string | null }) {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<{ id: string; sender: string; content: string; timestamp: string }[]>([]);
+  const [messages, setMessages] = useState<
+    { id: string; sender: string; content: string; timestamp: string }[]
+  >([]);
   const [inputMessage, setInputMessage] = useState("");
 
   useEffect(() => {

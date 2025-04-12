@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
-import { useAuth } from "@hooks/use-auth";
+import { useAuth } from "@hooks/use-Auth";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function GameHistoryDetailed() {

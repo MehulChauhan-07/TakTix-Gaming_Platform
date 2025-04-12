@@ -4,7 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { AuthService } from "../services/auth.service"
+import { AuthService } from "@services/auth.service"
 
 type User = {
   id: string

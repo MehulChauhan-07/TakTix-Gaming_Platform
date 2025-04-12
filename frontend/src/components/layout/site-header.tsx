@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@hooks/use-auth";
+import { useAuth } from "@hooks/use-Auth";
 import { Button } from "@components/ui/button";
 import {
   DropdownMenu,

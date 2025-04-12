@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { Navigate, useLocation } from "react-router-dom"
-import { useAuth } from "@hooks/use-auth"
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "@hooks/use-Auth";
 
 interface ProtectedRouteProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth()
-  const location = useLocation()
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -21,16 +21,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           <p className="mt-4 text-lg">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
     // Redirect to login page but save the location they were trying to access
-    return <Navigate to="/auth/login" state={{ from: location }} replace />
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  return <>{children}</>
-}
+  return <>{children}</>;
+};
 
-export default ProtectedRoute
-
+export default ProtectedRoute;

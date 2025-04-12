@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Board } from './Board';
-import { useSocket } from '@hooks/useSocket';
-import { useAuth } from '@hooks/use-auth';
-import { Card } from '@components/ui/card';
-import { Button } from '@components/ui/button';
+import React, { useState, useEffect } from "react";
+import { Board } from "./Board";
+import { useSocket } from "@hooks/useSocket";
+import { useAuth } from "@/src/hooks/use-Auth";
+import { Card } from "@components/ui/card";
+import { Button } from "@components/ui/button";
 
 interface GameProps {
   gameId: string;
@@ -22,29 +22,34 @@ export const Game: React.FC<GameProps> = ({
   const { user } = useAuth();
   const [board, setBoard] = useState(initialBoard);
   const [isMyTurn, setIsMyTurn] = useState(currentTurn === user?.id);
-  const [gameStatus, setGameStatus] = useState<'waiting' | 'in_progress' | 'completed'>('in_progress');
+  const [gameStatus, setGameStatus] = useState<
+    "waiting" | "in_progress" | "completed"
+  >("in_progress");
 
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('game:move', ({ board: newBoard, currentTurn: newTurn, winner }) => {
-      setBoard(newBoard);
-      setIsMyTurn(newTurn === user?.id);
-      
-      if (winner) {
-        setGameStatus('completed');
+    socket.on(
+      "game:move",
+      ({ board: newBoard, currentTurn: newTurn, winner }) => {
+        setBoard(newBoard);
+        setIsMyTurn(newTurn === user?.id);
+
+        if (winner) {
+          setGameStatus("completed");
+        }
       }
-    });
+    );
 
     return () => {
-      socket.off('game:move');
+      socket.off("game:move");
     };
   }, [socket, user?.id]);
 
   const handleCellClick = (position: number) => {
-    if (!isMyTurn || gameStatus !== 'in_progress') return;
+    if (!isMyTurn || gameStatus !== "in_progress") return;
 
-    socket?.emit('game:move', {
+    socket?.emit("game:move", {
       gameId,
       position,
       playerId: user?.id,
@@ -52,11 +57,13 @@ export const Game: React.FC<GameProps> = ({
   };
 
   const getGameStatusMessage = () => {
-    if (gameStatus === 'completed') {
-      const winner = players.find(p => p.id === board[4]);
+    if (gameStatus === "completed") {
+      const winner = players.find((p) => p.id === board[4]);
       return winner ? `${winner.username} wins!` : "It's a draw!";
     }
-    return isMyTurn ? "Your turn" : `${players.find(p => p.id === currentTurn)?.username}'s turn`;
+    return isMyTurn
+      ? "Your turn"
+      : `${players.find((p) => p.id === currentTurn)?.username}'s turn`;
   };
 
   return (
@@ -75,16 +82,16 @@ export const Game: React.FC<GameProps> = ({
           board={board}
           onCellClick={handleCellClick}
           currentPlayer={currentTurn}
-          disabled={!isMyTurn || gameStatus === 'completed'}
+          disabled={!isMyTurn || gameStatus === "completed"}
         />
 
-        {gameStatus === 'completed' && (
+        {gameStatus === "completed" && (
           <div className="flex justify-center">
             <Button
               variant="outline"
               onClick={() => {
                 // Handle game restart or navigation
-                window.location.href = '/games';
+                window.location.href = "/games";
               }}
             >
               Back to Games
@@ -94,4 +101,4 @@ export const Game: React.FC<GameProps> = ({
       </div>
     </Card>
   );
-}; 
+};
